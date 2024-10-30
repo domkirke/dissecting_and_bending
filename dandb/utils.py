@@ -63,6 +63,19 @@ def compute_activations_similarity(
     return sim_matrices
 
 
+def save_activations_similarity(
+    sim_matrices: tp.Dict[str, torch.Tensor], 
+    path: str
+    ) -> None:
+    torch.save(sim_matrices, path)
+
+
+def load_activations_similarity(
+    path: str
+    ) -> tp.Dict[str, torch.Tensor]:
+    return torch.load(path)
+
+
 def compute_clusters(
     sim_matrices: tp.Dict[str, torch.Tensor], 
     threshold: float =.8
