@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 import typing as tp
 
 import numpy as np
@@ -5,9 +7,12 @@ import torch
 import torch.nn as nn 
 
 from einops import rearrange
+import gin
+import rave
 import torchbend as tb
 
 torch.set_grad_enabled(False)
+
 
 def _inifinite_iterator():
     i = 0
@@ -121,3 +126,39 @@ def sort_clusters(
         sorted_idx = np.argsort([len(c) for c in op_clusters])[::-1]
         sorted_clusters[op] = [op_clusters[idx] for idx in sorted_idx]
     return sorted_clusters
+
+
+def _search_for_config(folder):
+    if os.path.isfile(folder):
+        folder = os.path.dirname(folder)
+    configs = list(map(str, Path(folder).rglob("config.gin")))
+    if configs != []:
+        return os.path.abspath(os.path.join(folder, "config.gin"))
+    configs = list(map(str, Path(folder).rglob("../config.gin")))
+    if configs != []:
+        return os.path.abspath(os.path.join(folder, "../config.gin"))
+    configs = list(map(str, Path(folder).rglob("../../config.gin")))
+    if configs != []:
+        return os.path.abspath(os.path.join(folder, "../../config.gin"))
+    else:
+        return None
+    
+
+def load_rave(
+    run_path: str, 
+    ckpt_path: str
+) -> nn.Module:
+    """
+    Given a path to a RAVE run, as well a specific checkpoint, instantiates
+    RAVE and loads the weights of the model
+    """
+    ckpt_path = os.path.join(run_path, ckpt_path)
+    gin.parse_config_file(_search_for_config(run_path))
+    rave_model = rave.RAVE()
+    weights = torch.load(ckpt_path)['state_dict']
+    rave_model.load_state_dict(weights, strict=False)
+    rave_model.eval()
+    for m in rave_model.modules():
+        if hasattr(m, 'weight_g'):
+            nn.utils.remove_weight_norm(m)
+    return rave_model

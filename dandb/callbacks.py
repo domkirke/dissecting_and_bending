@@ -5,6 +5,7 @@ import torch
 
 import torchbend as tb
 
+
 class ClusterCallback(tb.BendingCallback):
     weight_compatible = False 
     activation_compatible = True
