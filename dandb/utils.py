@@ -25,7 +25,7 @@ def extract_activations(
     bended_model: tb.BendedModule, 
     op_names: tp.List[str], 
     loader: torch.utils.data.DataLoader, 
-    device: str, 
+    device: str = 'cpu', 
     max_batches: int = 200, 
     avg_batch: bool = False
     ) -> tp.Dict[str, torch.Tensor]:
@@ -102,7 +102,7 @@ def compute_clusters(
             op_clusters.append(similar_features)
             handled+=similar_features
         clusters[op] = op_clusters
-        return clusters
+    return clusters
 
 
 def compute_non_singleton_clusters(
@@ -145,15 +145,13 @@ def _search_for_config(folder):
     
 
 def load_rave(
-    run_path: str, 
     ckpt_path: str
 ) -> nn.Module:
     """
     Given a path to a RAVE run, as well a specific checkpoint, instantiates
     RAVE and loads the weights of the model
     """
-    ckpt_path = os.path.join(run_path, ckpt_path)
-    gin.parse_config_file(_search_for_config(run_path))
+    gin.parse_config_file(_search_for_config(ckpt_path))
     rave_model = rave.RAVE()
     weights = torch.load(ckpt_path)['state_dict']
     rave_model.load_state_dict(weights, strict=False)
@@ -162,3 +160,19 @@ def load_rave(
         if hasattr(m, 'weight_g'):
             nn.utils.remove_weight_norm(m)
     return rave_model
+
+
+def get_bended_rave_audios(
+    audio_batch: torch.Tensor, 
+    bended_rave: tb.BendedModule, 
+    clustered_callbacks: tp.Dict[str, tb.BendingCallback], 
+) -> torch.Tensor:
+    """
+    Applies clustered affine bending to RAVE, then forwards an audio batch 
+    inside RAVE's twisted guts, and returns the 'reconstructed' output
+    """
+    bended_rave.reset()
+    for op, cb in clustered_callbacks.items():
+        bended_rave.bend(cb, op)
+    bended_audio = bended_rave(audio_batch)
+    return bended_audio

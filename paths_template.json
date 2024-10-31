@@ -1,0 +1,4 @@
+{
+    "checkpoint_path":  "path/to/pretrained/rave/checkpoint", 
+    "data_path": "path/to/dataset/"
+}

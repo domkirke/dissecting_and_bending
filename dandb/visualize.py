@@ -28,9 +28,11 @@ def make_audio_grid(
             pn.pane.Audio(
                 object=au_bended.squeeze().numpy(), 
                 sample_rate=sr), 
+            pn.pane.Str('\n'*2), 
+
         )
                       )
-    return pn.GridBox(*audios, nclos=ncols)
+    return pn.GridBox(*audios, ncols=ncols)
 
 
 def make_widgets(
@@ -42,10 +44,31 @@ def make_widgets(
     """
     widgets = {}
     for op in ops:
-        widgets[op] = {
-            'toggle': pn.widgets.Checkbox(name='Toggle'), 
-            'cluster': pn.widgets.IntSlider(value=0, start=0, end=4, name='Cluster'),
-            'scale': pn.widgets.FloatSlider(value=1, start=-1, end=3, step=.1, name='Scale'), 
-            'bias': pn.widgets.FloatSlider(value=0, start=-2, end=2, step=.1, name='Bias')
-        }
+        widgets[op+'/name'] = pn.widgets.StaticText(name=op, value=op)
+        widgets[op+'/toggle'] = pn.widgets.Checkbox(name='Toggle')
+        widgets[op+'/cluster'] = pn.widgets.IntSlider(value=0, start=0, end=4, name='Cluster')
+        widgets[op+'/scale'] = pn.widgets.FloatSlider(value=1, start=-1, end=3, step=.1, name='Scale')
+        widgets[op+'/bias'] = pn.widgets.FloatSlider(value=0, start=-2, end=2, step=.1, name='Bias')
     return widgets
+
+
+def update_affine_params(
+    clustered_affine_cb: tp.Dict[str, tb.BendingCallback], 
+    **params, 
+    ) -> tp.Dict[str, tb.BendingCallback]:
+    """
+    Updates the scale, bias, and cluster index of affine callbacks
+    """
+    for op_param_name, op_val in params.items():
+        op, _action = op_param_name.split('/')
+        if _action=='bias':
+            clustered_affine_cb[op]._callback.bias = op_val    
+        if _action=='scale':
+            clustered_affine_cb[op]._callback.scale = op_val
+        if _action=='cluster':
+            clustered_affine_cb[op].cluster_idx = op_val 
+        if _action=='toggle':
+            clustered_affine_cb[op].toggled = op_val 
+
+    return clustered_affine_cb    
+
