@@ -72,3 +72,11 @@ def update_affine_params(
 
     return clustered_affine_cb    
 
+
+def make_widget_box(op_names, **widgets):
+    widget_boxes = {op_name: [] for op_name in op_names}
+    for widget_name, widget in widgets.items():
+        op_name = widget_name.split('/')[0]
+        widget_boxes[op_name].append(widget)
+    return pn.Row(*[pn.WidgetBox(*op_widget) for op_widget in widget_boxes.values()])
+
