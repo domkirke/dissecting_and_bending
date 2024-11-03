@@ -1,5 +1,5 @@
 import typing as tp
-
+import math
 import numpy as np
 import panel as pn
 import torch 
@@ -80,3 +80,42 @@ def make_widget_box(op_names, **widgets):
         widget_boxes[op_name].append(widget)
     return pn.Row(*[pn.WidgetBox(*op_widget) for op_widget in widget_boxes.values()])
 
+
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+def get_grid_shape(n):
+    return math.floor(math.sqrt(n)), math.ceil(math.sqrt(n))
+
+def plot_1d_activation(name, activations, x_title=None, y_title=None, plot_picker = None):
+    plot_picker = plot_picker or (lambda x: x[..., :1024])
+    if activations.ndim == 1: 
+        activations = activations[None, None]
+    elif activations.ndim == 2:
+        activations = activations[None]
+    elif activations.ndim > 3:
+        activations = activations.reshape(activations.shape[:2], -1)
+
+    n_plots = activations.shape[0]
+    # if activations.ndim == 2 : 
+    data = plot_picker(activations)
+    # if activations.ndim == 3:
+    #     data = list(map(lambda x: plot_picker(x[0,0]), activations.split(1, dim=1)))
+
+    n_rows, n_columns = get_grid_shape(n_plots)
+    fig = make_subplots(rows=n_rows, cols=n_columns)
+    fig.update_layout(
+        title=name
+    )
+
+    for i in range(n_rows): 
+        for j in range(n_columns):
+            idx = i * n_columns + j 
+            if idx >= n_plots : break
+            d = data[idx]
+            for k, dd in enumerate(d):
+                p = go.Scatter(y = dd, name="channel %d"%(k), showlegend=True)
+                fig.add_trace(p, row=i+1, col=j+1)
+        if idx >= n_plots: break
+    
+    return fig
