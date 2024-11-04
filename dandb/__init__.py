@@ -1,4 +1,12 @@
+
+MODELS_LINKS = {
+    "sol_full_nopqmf_cf6bc5c85f": "https://www.dropbox.com/scl/fi/0cs3iwz0pxr95gie0vgy7/sol_full_nopqmf_cf6bc5c85f.zip?rlkey=uzs8u056mlmol4dn84dfvtj7o&dl=1"
+}
+MODELS_PATH = "models"
+
+
 from .callbacks import *
+from .download import *
 from .dataloading import make_loader
 from .imports import *
 from .utils import *
