@@ -183,4 +183,5 @@ def make_mnist_vae():
     out_sizes = encoder.sizes
     decoder = Decoder(out_sizes, in_channels, kernels, channels, hdim, nmlp, zdim)
     vae = VAE(encoder, decoder)
+    vae.eval()
     return vae

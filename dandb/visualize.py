@@ -1,4 +1,5 @@
 import typing as tp
+import torchvision
 import itertools
 from IPython.display import display as ipython_display, Audio
 import math
@@ -194,6 +195,52 @@ def plot_kernel_grid(kernels, height=300, width=250, margin = 3, display=False):
         ipython_display(fig)
     else:
         return fig
-    
+
+def preprocess_image(x):
+    if x.ndim == 3:
+        x = x.unsqueeze(1)
+    if x.shape[-1] == 1:
+        x = x.repeat(1, 3, 1, 1)
+    return torch.round(x * 255)
+
+def plot_image_grid(images, height=300, width=250, margin = 0, display=False):
+    n_column, n_row = math.ceil(math.sqrt(images.shape[0])), math.floor(math.sqrt(images.shape[0]))
+    fig= make_subplots(rows=n_row, cols=n_column)
+    fig.update_layout(
+        height=height,
+        
+        margin=dict(l=margin,r=margin,b=margin,t=margin, pad=0)
+    )
+    for i, j in itertools.product(range(n_row), range(n_column)):
+        img = (images[i*n_column+j].permute(1, 2, 0).repeat(1, 1, 3) * 255).round()
+        plot = go.Image(z=img)
+        fig.add_trace(plot, row=i+1, col=j+1)
+        fig.update_layout(**{f"xaxis{i*n_column+j+1}": {"showticklabels": False}, f"yaxis{i*n_column+j+1}": {"showticklabels": False}})
+    if display: 
+        ipython_display(fig)
+    else:
+        return fig
 
 
+def plot_image_reconstructions(x, y, **kwargs):
+    images = torch.cat([x, y], -1)
+    return plot_image_grid(images, **kwargs)
+
+
+def plot_image_activations(activations, height=300, margin = 0, display=False, name=None):
+    nrow = math.floor(math.sqrt(activations.shape[0]))
+    activations = torchvision.utils.make_grid(preprocess_image(activations), nrow=nrow, padding=1, pad_value=255)
+    activations = activations.permute(1, 2, 0)
+    fig=go.Figure()
+    fig.update_layout(
+        height=height,
+        # margin=dict(l=margin,r=margin,b=margin,t=margin, pad=0),
+        xaxis= {"showticklabels": False},
+        yaxis = {"showticklabels": False},
+        title=name,
+    )
+    fig.add_trace(go.Image(z=activations))
+    if display: 
+        ipython_display(fig)
+    else:
+        return fig
