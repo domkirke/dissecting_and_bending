@@ -226,8 +226,41 @@ def plot_image_reconstructions(x, y, **kwargs):
     images = torch.cat([x, y], -1)
     return plot_image_grid(images, **kwargs)
 
+def plot_image_activations_list(activations, height=300, margin = 0, display=False, n_rows=None, name=None):
+    for i, act in enumerate(activations):
+        nrow = math.floor(math.sqrt(act.shape[0]))
+        act = torchvision.utils.make_grid(preprocess_image(act), nrow=nrow, padding=1, pad_value=255)
+        act = act.permute(1, 2, 0)
+        activations[i] = act
+    if n_rows is None:
+        n_rows, n_columns = get_grid_shape(len(activations))
+    else:
+        n_columns = math.ceil(len(activations) / n_rows)
 
-def plot_image_activations(activations, height=300, margin = 0, display=False, name=None):
+
+    fig = make_subplots(rows=n_rows, cols=n_columns)
+    for k, act in enumerate(activations):
+        i = k // n_columns
+        j = k % n_columns
+        fig.add_trace(go.Image(z=activations[k]), row=i+1, col=j+1)
+        fig.update_layout(**{f"xaxis{i*n_columns+j+1}": {"showticklabels": False}, f"yaxis{i*n_columns+j+1}": {"showticklabels": False}})
+
+    fig.update_layout(
+            height=height,
+            margin=dict(l=margin,r=margin,b=margin,t=margin, pad=0),
+            xaxis= {"showticklabels": False},
+            yaxis = {"showticklabels": False},
+                title=name,
+        )
+    if display: 
+        ipython_display(fig)
+    else:
+        return fig
+
+
+def plot_image_activations(activations, height=300, margin = 0, display=False, n_rows=None, name=None):
+    if isinstance(activations, list):
+        return plot_image_activations_list(activations, height=height, margin=margin, display=display, name=name, n_rows=n_rows)
     nrow = math.floor(math.sqrt(activations.shape[0]))
     activations = torchvision.utils.make_grid(preprocess_image(activations), nrow=nrow, padding=1, pad_value=255)
     activations = activations.permute(1, 2, 0)
