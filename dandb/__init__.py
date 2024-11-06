@@ -4,6 +4,8 @@ MODELS_LINKS = {
 }
 MODELS_PATH = "models"
 
+AUDIO_PATH = "data/examples"
+
 
 from .callbacks import *
 from .download import *
@@ -11,6 +13,14 @@ from .dataloading import make_loader
 from .imports import *
 from .utils import *
 from .visualize import *
+
+RAVE_DECODER_ACT_NAMES_DECODE = [
+    'add_6', 
+    'add_12', 
+    'add_18', 
+    'add_24', 
+    'sigmoid'
+]
 
 RAVE_DECODER_ACT_NAMES = [
     'add_25', 

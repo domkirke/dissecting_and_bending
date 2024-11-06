@@ -1,8 +1,14 @@
 import typing as tp
+import itertools
+from IPython.display import display as ipython_display, Audio
 import math
 import numpy as np
 import panel as pn
 import torch 
+
+
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 import torchbend as tb
 
@@ -82,15 +88,17 @@ def make_widget_box(op_names, **widgets):
     return pn.Row(*[pn.WidgetBox(*op_widget) for op_widget in widget_boxes.values()])
 
 
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-
-
 def get_grid_shape(n):
     return math.floor(math.sqrt(n)), math.ceil(math.sqrt(n))
+    
 
-def plot_1d_activation(name, activations, x_title=None, y_title=None, plot_picker = None):
-    plot_picker = plot_picker or (lambda x: x[..., :1024])
+def plot_1d_activation(name, activations, plot_picker = None, height=250, max_samples=16384, display=False, channel_idx=None):
+    def _downgrade(x, max_samples=max_samples):
+        t = np.arange(x.shape[-1])
+        downscale = math.ceil(x.shape[-1] / max_samples)
+        return t[..., ::downscale], x[..., ::downscale]
+
+    plot_picker = _downgrade
     if activations.ndim == 1: 
         activations = activations[None, None]
     elif activations.ndim == 2:
@@ -100,14 +108,16 @@ def plot_1d_activation(name, activations, x_title=None, y_title=None, plot_picke
 
     n_plots = activations.shape[0]
     # if activations.ndim == 2 : 
-    data = plot_picker(activations)
+    t, data = plot_picker(activations)
     # if activations.ndim == 3:
     #     data = list(map(lambda x: plot_picker(x[0,0]), activations.split(1, dim=1)))
 
     n_rows, n_columns = get_grid_shape(n_plots)
     fig = make_subplots(rows=n_rows, cols=n_columns)
     fig.update_layout(
-        title=name
+        title=name,
+        height=height,
+        margin=dict(l=0,r=0,b=0,t=0,pad=40)
     )
 
     for i in range(n_rows): 
@@ -116,8 +126,74 @@ def plot_1d_activation(name, activations, x_title=None, y_title=None, plot_picke
             if idx >= n_plots : break
             d = data[idx]
             for k, dd in enumerate(d):
-                p = go.Scatter(y = dd, name="channel %d"%(k), showlegend=True)
+                idx_c = k if channel_idx is None else channel_idx[k]
+                p = go.Scatter(x = t, y = dd, name="channel %d"%(idx_c), showlegend=True)
                 fig.add_trace(p, row=i+1, col=j+1)
         if idx >= n_plots: break
+    if display:
+        ipython_display(fig)
+    else: 
+        return fig
+
+
+
+def plot_audio(audio, plot_waveform=True, plot_spectrogram=True, height=200, sr=44100, n_fft=2048, name=None, display = False):
+    audio_output = widgets.Output()
+    with audio_output:
+        ipython_display(Audio(audio.numpy(), rate=sr))
+    audio_obj = [audio_output]
+    if (plot_waveform and plot_spectrogram):
+        if plot_waveform:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x = torch.arange(audio.shape[-1]) / sr, y = audio[0].numpy()))
+            fig.update_layout(title=name, height=height - 30, margin=dict(l=0,r=0,b=0,t=0,pad=4))
+            audio_obj.insert(0, go.FigureWidget(fig))
+        if plot_spectrogram:
+            input_stft = torch.stft(audio, n_fft, window=torch.hann_window(n_fft), return_complex=True).abs()
+            fig = go.Figure()
+            fig.update_layout(title=name, margin=dict(l=0,r=0,b=0,t=0,pad=4), height=height)
+            fig.add_trace(go.Heatmap(x = torch.linspace(0, audio.shape[-1] / sr, input_stft.shape[-1]), 
+                                     y = torch.arange(input_stft.shape[-2]) / input_stft.shape[-2] * (sr / 2),
+                                     z =input_stft[0].numpy(), 
+                                     showlegend=False, showscale=False,
+                                     colorbar=None))
+            spec = go.FigureWidget(fig)
+    if plot_spectrogram: 
+        out = widgets.HBox([widgets.VBox(audio_obj), spec])
+    else:
+        out = widgets.VBox(audio_obj)
+    if display: 
+        ipython_display(out)
+    else:
+        return out
+
+
+def plot_reconstructions(original, reconstruction, display=True, **kwargs):
+    outs = widgets.HBox([plot_audio(original, **kwargs), plot_audio(reconstruction, **kwargs)])
+    if display: 
+        ipython_display(outs)
+    else:
+        return outs
+
+
+def plot_latent_trajs(latent_trajs, name="latent trajectories"):
+    return plot_1d_activation(name, latent_trajs)
+
+
+def plot_kernel_grid(kernels, height=300, width=250, margin = 3, display=False):
+    n_column, n_row = math.ceil(math.sqrt(kernels.shape[0])), math.floor(math.sqrt(kernels.shape[0]))
+    fig= make_subplots(rows=n_row, cols=n_column)
+    fig.update_layout(
+        height=height,
+        margin=dict(l=margin,r=margin,b=margin,t=margin, pad=2)
+    )
+    for i, j in itertools.product(range(n_row), range(n_column)):
+        plot = go.Scatter(y=kernels[i*n_column+j].numpy(), showlegend=False)
+        fig.add_trace(plot, row=i+1, col=j+1)       
+    if display: 
+        ipython_display(fig)
+    else:
+        return fig
     
-    return fig
+
+
