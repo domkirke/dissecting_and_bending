@@ -2,6 +2,7 @@ import typing as tp
 import torchvision
 import itertools
 from IPython.display import display as ipython_display, Audio
+import ipywidgets as widgets
 import math
 import numpy as np
 import panel as pn
@@ -277,3 +278,18 @@ def plot_image_activations(activations, height=300, margin = 0, display=False, n
         ipython_display(fig)
     else:
         return fig
+
+
+def plot_features(t, *features, title=None):
+
+    fig = make_subplots(rows=1, cols=4, subplot_titles=[f'Feature {idx+1}' for idx in range(4)])
+    for idx, feature in enumerate(features):
+        fig.add_trace(
+            go.Scatter(
+                y=feature.squeeze().numpy(), 
+                x=t.squeeze().numpy(), 
+                name = f'Feature {idx+1}'
+                ), 
+            row=1, col=idx+1)
+    fig.update_layout(showlegend=False, title=title)
+    fig.show()

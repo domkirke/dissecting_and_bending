@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 import typing as tp
 
@@ -176,3 +177,15 @@ def get_bended_rave_audios(
         bended_rave.bend(cb, op)
     bended_audio = bended_rave(audio_batch)
     return bended_audio
+
+def get_dataset_path():
+    with open('paths.json', 'r') as f:
+        paths = json.load(f)
+        dataset_path = paths['data_path']
+        return dataset_path
+
+def get_checkpoint_path():
+    with open('paths.json', 'r') as f:
+        paths = json.load(f)
+        checkpoint_path = paths['checkpoint_path']
+        return checkpoint_path 
