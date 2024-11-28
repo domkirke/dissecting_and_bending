@@ -1,0 +1,17 @@
+tabulate
+gin-config
+numpy
+matplotlib
+pandas
+jupyter
+torch
+torchvision
+torchaudio
+pandas
+dill
+nn-tilde
+plotly
+panel
+tqdm
+einops
+git+https://github.com/domkirke/torchbend

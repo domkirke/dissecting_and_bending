@@ -1,0 +1,12 @@
+*.pyc
+*.pyo
+*/.DS_Store
+*pycache*
+*pytest*
+*build*
+*egg-info*
+.ipynb_checkpoints
+dist/*
+.vscode
+*.pt
+paths.json
