@@ -14,4 +14,4 @@ plotly
 panel
 tqdm
 einops
-git+https://github.com/domkirke/torchbend
+git+https://github.com/domkirke/torchbend@beijing

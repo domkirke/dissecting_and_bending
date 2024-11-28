@@ -4,7 +4,7 @@ To install this repository, it is strongly recommanded to perform these operatio
 
 **Clone** locally this repository by running the following command in a target folder of your computer, and going inside with the `cd` command: 
 ```
-git clone git+https://github.com/domkirke/dissecting_and_bending
+git clone https://github.com/domkirke/dissecting_and_bending.git -b beijing
 ```
 
 then, install RAVE and  **update torch** as follows to get the last torch version :  
